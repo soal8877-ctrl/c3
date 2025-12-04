@@ -50,10 +50,10 @@
 
         .calculator-container {
             display: flex;
-            gap: 20px;
-            max-width: 800px;
+            justify-content: center;
+            align-items: center;
             width: 100%;
-            align-items: flex-start;
+            position: relative;
         }
 
         .calculator {
@@ -199,13 +199,21 @@
             padding: 20px;
             width: 350px;
             max-height: 600px;
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
             display: none;
             flex-direction: column;
-            transition: background 0.3s ease, box-shadow 0.3s ease;
+            transition: background 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease, visibility 0.3s ease;
+            opacity: 0;
+            visibility: hidden;
+            z-index: 10;
         }
 
         .history-panel.active {
             display: flex;
+            opacity: 1;
+            visibility: visible;
         }
 
         .history-header {
@@ -282,19 +290,27 @@
         }
 
         @media (max-width: 768px) {
-            .calculator-container {
-                flex-direction: column;
-            }
-
             .history-panel {
-                width: 100%;
+                width: calc(100% - 40px);
                 max-width: 400px;
+                left: 20px !important;
+                right: auto;
             }
         }
     </style>
 </head>
 <body>
     <div class="calculator-container">
+        <div class="history-panel" id="historyPanel">
+            <div class="history-header">
+                <div class="history-title">Журнал операций</div>
+                <button class="history-clear" onclick="clearHistory()">Очистить</button>
+            </div>
+            <div class="history-list" id="historyList">
+                <div class="history-empty">История пуста</div>
+            </div>
+        </div>
+
         <div class="calculator">
             <button class="history-toggle" id="historyToggle" onclick="toggleHistory()" title="Журнал операций">
                 📋
@@ -327,16 +343,6 @@
             <button class="zero" onclick="appendNumber('0')">0</button>
             <button onclick="appendDecimal()">.</button>
         </div>
-        </div>
-
-        <div class="history-panel" id="historyPanel">
-            <div class="history-header">
-                <div class="history-title">Журнал операций</div>
-                <button class="history-clear" onclick="clearHistory()">Очистить</button>
-            </div>
-            <div class="history-list" id="historyList">
-                <div class="history-empty">История пуста</div>
-            </div>
         </div>
     </div>
 
@@ -417,8 +423,37 @@
         // Переключение отображения истории
         function toggleHistory() {
             const historyPanel = document.getElementById('historyPanel');
-            historyPanel.classList.toggle('active');
+            const calculator = document.querySelector('.calculator');
+            
+            if (historyPanel.classList.contains('active')) {
+                historyPanel.classList.remove('active');
+            } else {
+                // Вычисляем позицию калькулятора
+                const calculatorRect = calculator.getBoundingClientRect();
+                const panelWidth = 350;
+                const gap = 20;
+                
+                // Позиционируем панель слева от калькулятора
+                historyPanel.style.left = (calculatorRect.left - panelWidth - gap) + 'px';
+                historyPanel.classList.add('active');
+            }
         }
+
+        // Обновление позиции панели истории
+        function updateHistoryPosition() {
+            const historyPanel = document.getElementById('historyPanel');
+            const calculator = document.querySelector('.calculator');
+            
+            if (historyPanel.classList.contains('active')) {
+                const calculatorRect = calculator.getBoundingClientRect();
+                const panelWidth = 350;
+                const gap = 20;
+                historyPanel.style.left = (calculatorRect.left - panelWidth - gap) + 'px';
+            }
+        }
+
+        // Обновление позиции при изменении размера окна
+        window.addEventListener('resize', updateHistoryPosition);
 
         // Очистка истории
         function clearHistory() {
