@@ -48,6 +48,14 @@
             transition: background 0.3s ease;
         }
 
+        .calculator-container {
+            display: flex;
+            gap: 20px;
+            max-width: 800px;
+            width: 100%;
+            align-items: flex-start;
+        }
+
         .calculator {
             background: var(--calculator-bg);
             border-radius: 20px;
@@ -159,14 +167,142 @@
         .zero {
             grid-column: span 2;
         }
+
+        .history-toggle {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: var(--button-bg);
+            border: none;
+            border-radius: 50px;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+            color: var(--button-text);
+            box-shadow: 0 2px 10px var(--shadow-hover);
+        }
+
+        .history-toggle:hover {
+            background: var(--button-hover);
+            transform: scale(1.1);
+        }
+
+        .history-panel {
+            background: var(--calculator-bg);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px var(--shadow-color);
+            padding: 20px;
+            width: 350px;
+            max-height: 600px;
+            display: none;
+            flex-direction: column;
+            transition: background 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .history-panel.active {
+            display: flex;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--button-bg);
+        }
+
+        .history-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--button-text);
+        }
+
+        .history-clear {
+            background: #ff6b6b;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .history-clear:hover {
+            background: #ee5a5a;
+        }
+
+        .history-list {
+            overflow-y: auto;
+            flex: 1;
+            max-height: 500px;
+        }
+
+        .history-item {
+            background: var(--button-bg);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--button-text);
+        }
+
+        .history-item:hover {
+            background: var(--button-hover);
+            transform: translateX(5px);
+        }
+
+        .history-expression {
+            font-size: 0.9rem;
+            color: var(--button-text);
+            opacity: 0.7;
+            margin-bottom: 5px;
+            word-break: break-all;
+        }
+
+        .history-result {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--button-text);
+        }
+
+        .history-empty {
+            text-align: center;
+            color: var(--button-text);
+            opacity: 0.5;
+            padding: 40px 20px;
+            font-size: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .calculator-container {
+                flex-direction: column;
+            }
+
+            .history-panel {
+                width: 100%;
+                max-width: 400px;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="calculator">
-        <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Переключить тему">
-            🌙
-        </button>
-        <div class="display" id="display">0</div>
+    <div class="calculator-container">
+        <div class="calculator">
+            <button class="history-toggle" id="historyToggle" onclick="toggleHistory()" title="Журнал операций">
+                📋
+            </button>
+            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Переключить тему">
+                🌙
+            </button>
+            <div class="display" id="display">0</div>
         <div class="buttons">
             <button class="clear" onclick="clearDisplay()">C</button>
             <button class="operator" onclick="appendOperator('/')">/</button>
@@ -191,12 +327,107 @@
             <button class="zero" onclick="appendNumber('0')">0</button>
             <button onclick="appendDecimal()">.</button>
         </div>
+        </div>
+
+        <div class="history-panel" id="historyPanel">
+            <div class="history-header">
+                <div class="history-title">Журнал операций</div>
+                <button class="history-clear" onclick="clearHistory()">Очистить</button>
+            </div>
+            <div class="history-list" id="historyList">
+                <div class="history-empty">История пуста</div>
+            </div>
+        </div>
     </div>
 
     <script>
         let display = document.getElementById('display');
         let currentInput = '0';
         let shouldResetDisplay = false;
+        let history = [];
+
+        // Загрузка истории из localStorage
+        function loadHistory() {
+            const savedHistory = localStorage.getItem('calculatorHistory');
+            if (savedHistory) {
+                history = JSON.parse(savedHistory);
+                renderHistory();
+            }
+        }
+
+        // Сохранение истории в localStorage
+        function saveHistory() {
+            localStorage.setItem('calculatorHistory', JSON.stringify(history));
+        }
+
+        // Добавление операции в историю
+        function addToHistory(expression, result) {
+            const historyItem = {
+                expression: expression,
+                result: result,
+                timestamp: new Date().toLocaleTimeString('ru-RU')
+            };
+            history.unshift(historyItem);
+            
+            // Ограничиваем историю 50 записями
+            if (history.length > 50) {
+                history = history.slice(0, 50);
+            }
+            
+            saveHistory();
+            renderHistory();
+        }
+
+        // Отображение истории
+        function renderHistory() {
+            const historyList = document.getElementById('historyList');
+            
+            if (history.length === 0) {
+                historyList.innerHTML = '<div class="history-empty">История пуста</div>';
+                return;
+            }
+            
+            historyList.innerHTML = history.map((item, index) => {
+                const escapedResult = item.result.replace(/'/g, "\\'");
+                return `
+                    <div class="history-item" onclick="useHistoryResult(${index})">
+                        <div class="history-expression">${escapeHtml(item.expression)} =</div>
+                        <div class="history-result">${escapeHtml(item.result)}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Экранирование HTML для безопасности
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Использование результата из истории
+        function useHistoryResult(index) {
+            if (history[index]) {
+                currentInput = history[index].result;
+                shouldResetDisplay = false;
+                updateDisplay();
+            }
+        }
+
+        // Переключение отображения истории
+        function toggleHistory() {
+            const historyPanel = document.getElementById('historyPanel');
+            historyPanel.classList.toggle('active');
+        }
+
+        // Очистка истории
+        function clearHistory() {
+            if (confirm('Очистить всю историю операций?')) {
+                history = [];
+                saveHistory();
+                renderHistory();
+            }
+        }
 
         // Инициализация темы
         function initTheme() {
@@ -222,6 +453,7 @@
 
         // Инициализация при загрузке страницы
         initTheme();
+        loadHistory();
 
         function updateDisplay() {
             display.textContent = currentInput;
@@ -271,6 +503,7 @@
             try {
                 // Заменяем × на * для вычисления
                 let expression = currentInput.replace(/×/g, '*');
+                const originalExpression = currentInput; // Сохраняем оригинальное выражение для истории
                 
                 // Проверяем на деление на ноль
                 if (expression.includes('/0') && !expression.includes('/0.')) {
@@ -285,7 +518,10 @@
                 if (isNaN(result) || !isFinite(result)) {
                     currentInput = 'Ошибка';
                 } else {
-                    currentInput = result.toString();
+                    const resultStr = result.toString();
+                    currentInput = resultStr;
+                    // Добавляем в историю только успешные вычисления
+                    addToHistory(originalExpression, resultStr);
                 }
                 
                 updateDisplay();
