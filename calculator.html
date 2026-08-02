@@ -337,18 +337,30 @@
 
             .calculator {
                 max-width: 400px;
+                order: 1;
             }
 
             .history-panel {
                 max-width: 400px;
                 width: 100%;
                 max-height: 280px;
+                order: 2;
             }
         }
     </style>
 </head>
 <body>
     <div class="app">
+        <aside class="history-panel" aria-label="Журнал операций">
+            <div class="history-header">
+                <h2 class="history-title">Журнал</h2>
+                <button type="button" class="history-clear-btn" id="clearHistoryBtn" disabled>Очистить</button>
+            </div>
+            <div class="history-list" id="historyList" role="list">
+                <p class="history-empty" id="historyEmpty">Пока пусто — нажмите «=»</p>
+            </div>
+        </aside>
+
         <div class="calculator">
             <div class="toolbar">
                 <button type="button" class="theme-toggle" id="themeToggle" aria-label="Переключить тему" title="Переключить тему">
@@ -382,16 +394,6 @@
                 <button onclick="appendDecimal()">.</button>
             </div>
         </div>
-
-        <aside class="history-panel" aria-label="Журнал операций">
-            <div class="history-header">
-                <h2 class="history-title">Журнал</h2>
-                <button type="button" class="history-clear-btn" id="clearHistoryBtn" disabled>Очистить</button>
-            </div>
-            <div class="history-list" id="historyList" role="list">
-                <p class="history-empty" id="historyEmpty">Пока пусто — нажмите «=»</p>
-            </div>
-        </aside>
     </div>
 
     <script>
